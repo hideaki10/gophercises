@@ -2,6 +2,7 @@ package cyoa
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"text/template"
@@ -83,10 +84,25 @@ type handler struct {
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	tpl := template.Must(template.New("test").Parse(defaultStory))
-	err := tpl.Execute(w, h.story["intro"])
-	if err != nil {
-		panic(err)
+
+	path := r.URL.Path
+
+	fmt.Println(path)
+
+	if path == "/" || path == "" {
+		path = "/intro"
 	}
+
+	path = path[1:]
+	fmt.Println(path)
+	if chapter, ok := h.story[path]; ok {
+		err := tpl.Execute(w, chapter)
+		if err != nil {
+			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		}
+		return
+	}
+	http.Error(w, "chapter not found", http.StatusNotFound)
 }
 
 type Story map[string]Chapter
